@@ -23,27 +23,20 @@ def part1(content = None) -> int:
         lines.append(line)
     # add diagonal lines:
     l_len = len(content[0])
-    for i in range(len(content[1:])):
-        diag = ''
-        r_diag = ''
-        for j in range(len(content[i+1:])):
-            diag += content[i+1+j][j]
-            r_diag += content[i+1+j][l_len-j-1]
-        if len(diag) >= 4:
-            lines.append(diag)
-        if len(r_diag) >= 4:
-            lines.append(r_diag)
-    # add top diagonal lines
-    for i in range(len(content[0])):
-        diag = ''
-        r_diag = ''
-        for j in range(len(content[0][i:])):
-            diag += content[j][i+j]
-            r_diag += content[j][l_len-i-j-1]
-        if len(diag) >= 4:
-            lines.append(diag)
-        if len(r_diag) >= 4:
-            lines.append(r_diag)
+    # main diags
+    diags = ['', '']
+    for i in range(l_len):
+        diags[0] += content[i][i]
+        diags[1] += content[i][l_len-i-1]
+    lines.extend(diags)
+    for i in range(1, l_len-3):
+        diags = [
+            ''.join([content[i+j][j] for j in range(l_len-i)]),
+            ''.join([content[i+j][l_len-j-1] for j in range(l_len-i)]),
+            ''.join([content[j][i+j] for j in range(l_len-i)]),
+            ''.join([content[j][l_len-i-j-1] for j in range(l_len-i)])
+        ]
+        lines.extend([d for d in diags if len(d) >= 4])
     return sum([len(list(re.findall(r'(?=XMAS|SAMX)', line))) for line in lines])
 
 # Part 2:
