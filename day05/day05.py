@@ -16,18 +16,12 @@ def part1(rules = None, lists = None) -> int:
     total = 0
     for i, l in enumerate(lists):
         invalid = False
-        seen = set()
         for index, page in enumerate(l):
-            for r in rules:
-                if page in r:
-                    if r[0] == page:
-                        if r[1] in seen:
-                            invalid = True
-                            break
-                    else:
-                        if r[0] in l[index+1:]:
-                            invalid = True
-                            break
+            if page not in rules:
+                continue
+            invalid = len(set(l[:index]) & set(rules[page])) != 0
+            if invalid:
+                break
         lists[i] = (l, invalid)
         if not invalid:
             total += l[int((len(l)-1)/2)]
@@ -38,14 +32,10 @@ def part2(rules = None, lists = None) -> int:
     total = 0
     for l, invalid in lists:
         if invalid:
-            relevant_rules = []
-            for r in rules:
-                if set(r).issubset(l):
-                    relevant_rules.append(r)
             sorted_list = [l.pop(0)]
             for page in l:
                 for i, page2 in enumerate(sorted_list):
-                    if (page, page2) in relevant_rules:
+                    if page2 in rules[page]:
                         sorted_list.insert(i, page)
                         break
                 else:
@@ -58,9 +48,12 @@ def get_input():
         rules, lists = (s for s in f.read().rstrip().split('\n\n'))
         rules = [s.strip() for s in rules.split('\n')]
         rules = [(int(i), int(j)) for i, j in map(lambda r: r.split('|'), rules)]
+        rule_map = {k: set() for k, _ in rules}
+        for one, two in rules:
+            rule_map[one].add(two)
         lists = [s.strip() for s in lists.split('\n')]
         lists = [[int(s) for s in l.split(',')] for l in lists]
-    return rules, lists
+    return rule_map, lists
 
 @profiler
 def solve():
