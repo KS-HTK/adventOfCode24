@@ -12,10 +12,12 @@ def profiler(method):
         return ret
     return profiler_method
 
+start_pos: complex = 0+0j
+
 def get_guard_route(
-        board: dict[complex, Literal['.', '#', 'X']],
-        pos: complex,
-) -> Optional[set[complex]]:
+        board: dict[complex, Literal['.', '#', 'X']]
+) -> Optional[set[tuple[complex, complex]]]:
+    pos = start_pos
     direction = 0-1j
     seen = set()
     while True:
@@ -26,7 +28,7 @@ def get_guard_route(
 
         neo_pos = pos+direction
         if neo_pos not in board:
-            return {c for c, _ in seen}
+            return seen
         match board[neo_pos]:
             case '.':
                 board[neo_pos] = 'X'
@@ -37,28 +39,29 @@ def get_guard_route(
                 direction = -direction.imag+1j*direction.real
 
 # Part 1:
-def part1(board, start_pos) -> int:
-    return len(get_guard_route(board, start_pos))
+def part1(board) -> int:
+    return len({c for c, _ in get_guard_route(board)})
 
 # Part 2:
-def part2(board, start_pos) -> int:
+def part2(board) -> int:
     return sum(
-        get_guard_route(board | {pos: '#'}, start_pos) is None for pos in get_guard_route(board, start_pos)
+        get_guard_route(board | {pos: '#'}) is None for pos in {c for c, _ in get_guard_route(board)}
     )
 
 def get_input():
+    global start_pos
     with open(os.path.dirname(os.path.realpath(__file__))+'/input', 'r', encoding='utf-8') as f:
         content = [s.strip() for s in f.read().rstrip().split('\n')]
     board = {x + 1j * y: c for y, l in enumerate(content) for x, c in enumerate(l)}
-    pos = [x + 1j * y for y, l in enumerate(content) for x, c in enumerate(l) if c == '^'][0]
-    board[pos] = 'X'
-    return board, pos
+    start_pos = [x + 1j * y for y, l in enumerate(content) for x, c in enumerate(l) if c == '^'][0]
+    board[start_pos] = 'X'
+    return board
 
 @profiler
 def solve():
-    board, pos = get_input()
-    print(f'Part 1: {part1(board, pos)}')
-    print(f'Part 2: {part2(board, pos)}')
+    board = get_input()
+    print(f'Part 1: {part1(board)}')
+    print(f'Part 2: {part2(board)}')
 
 if __name__ == "__main__":
     solve()
