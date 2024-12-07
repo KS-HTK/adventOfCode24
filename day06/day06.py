@@ -3,8 +3,6 @@
 import os
 from time import perf_counter
 from typing import Literal, Optional
-from unittest import case
-
 
 def profiler(method):
     def profiler_method(*arg, **kw):
@@ -17,46 +15,36 @@ def profiler(method):
 def get_guard_route(
         board: dict[complex, Literal['.', '#', 'X']],
         pos: complex,
-        obs: Optional[complex] = None
-) -> tuple[Optional[int], dict[complex, Literal['.', '#', 'X']]]:
-    board = board.copy()
+) -> Optional[set[complex]]:
     direction = 0-1j
-    count = 1
-    if obs is not None:
-        board[obs] = '#'
     seen = set()
-    while pos+direction in board:
+    while True:
         key = (pos, direction)
         if key in seen:
-            return None, board
+            return None
         seen.add(key)
+
         neo_pos = pos+direction
+        if neo_pos not in board:
+            return {c for c, _ in seen}
         match board[neo_pos]:
             case '.':
-                count += 1
                 board[neo_pos] = 'X'
                 pos = neo_pos
             case 'X':
                 pos = neo_pos
             case '#':
                 direction = -direction.imag+1j*direction.real
-    return sum([1 for x in board.values() if x[0] == 'X']), board
 
 # Part 1:
 def part1(board, start_pos) -> int:
-    return get_guard_route(board, start_pos)[0]
+    return len(get_guard_route(board, start_pos))
 
 # Part 2:
 def part2(board, start_pos) -> int:
-    _, route = get_guard_route(board, start_pos)
-    possible_blockages = {k for k, v in route.items() if v == 'X'}
-    actual_blockages = set()
-    if start_pos in possible_blockages:
-        possible_blockages.remove(start_pos)
-    for k in possible_blockages:
-        if get_guard_route(board, start_pos, k)[0] is None:
-            actual_blockages.add(k)
-    return len(actual_blockages)
+    return sum(
+        get_guard_route(board | {pos: '#'}, start_pos) is None for pos in get_guard_route(board, start_pos)
+    )
 
 def get_input():
     with open(os.path.dirname(os.path.realpath(__file__))+'/input', 'r', encoding='utf-8') as f:
