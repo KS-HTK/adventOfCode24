@@ -1,11 +1,7 @@
 # -*- coding: utf-8 -*-
-import os
-from functools import reduce
-from operator import mul
-from time import perf_counter
-import itertools
-from typing import Literal
 
+import os
+from time import perf_counter
 
 def profiler(method):
     def profiler_method(*arg, **kw):
@@ -15,50 +11,34 @@ def profiler(method):
         return ret
     return profiler_method
 
-def caculate_total(nums: list[int], ops: tuple[Literal['+', '*', '|']], expected_result: int) -> int:
-    total = nums[0]
-    for i, op in enumerate(ops):
-        match op:
-            case '+':
-                total += nums[i+1]
-            case '*':
-                total *= nums[i+1]
-            case '|':
-                total = int(str(total) + str(nums[i+1]))
-        if total > expected_result:
-            return 0
-    return total
-
+def reaches_total(nums: list[int], pt2: bool, expected_result) -> int:
+    if nums[0] > expected_result:
+        return False
+    if len(nums) == 1:
+        return nums[0] == expected_result
+    if reaches_total([nums[0]+nums[1]]+nums[2:], pt2, expected_result):
+        return True
+    if reaches_total([nums[0]*nums[1]]+nums[2:], pt2, expected_result):
+        return True
+    if pt2 and reaches_total([int(str(nums[0])+str(nums[1]))]+nums[2:], pt2, expected_result):
+        return True
+    return False
 
 # Part 1:
-def part1(content = None) -> str|int:
-    test_total = 0
+def part1(content) -> int:
+    total = 0
     for res, lst in content:
-        if sum(lst) == res or reduce(mul, lst) == res:
-            test_total += res
-            continue
-        operator_options: list[tuple[Literal['*', '+']]] = list(itertools.product(['+', '*'], repeat=len(lst)-1))
-        for ops in operator_options:
-            ct = caculate_total(lst, ops, res)
-            if ct == res:
-                test_total += ct
-                break
-    return test_total
+        if reaches_total(lst, False, res):
+            total += res
+    return total
 
 # Part 2:
-def part2(content = None) -> str|int:
-    test_total = 0
+def part2(content) -> int:
+    total = 0
     for res, lst in content:
-        if sum(lst) == res or reduce(mul, lst) == res:
-            test_total += res
-            continue
-        operator_options: list[tuple[Literal['*', '+', '|']]] = list(itertools.product(['+', '*', '|'], repeat=len(lst)-1))
-        for ops in operator_options:
-            ct = caculate_total(lst, ops, res)
-            if ct == res:
-                test_total += ct
-                break
-    return test_total
+        if reaches_total(lst, True, res):
+            total += res
+    return total
 
 def get_input():
     with open(os.path.dirname(os.path.realpath(__file__))+'/input', 'r', encoding='utf-8') as f:
