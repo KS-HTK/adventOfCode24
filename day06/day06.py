@@ -2,7 +2,6 @@
 
 import os
 from time import perf_counter
-from typing import Literal, Optional
 
 def profiler(method):
     def profiler_method(*arg, **kw):
@@ -12,56 +11,93 @@ def profiler(method):
         return ret
     return profiler_method
 
-start_pos: complex = 0+0j
+INVALID: tuple[int, int, int] = (-1, -1, -1)
+DIRECTIONS: list[tuple[int, int]] = [(0, -1), (1, 0), (0, 1), (-1, 0)]
 
-def get_guard_route(
-        board: dict[complex, Literal['.', '#', 'X']]
-) -> Optional[set[tuple[complex, complex]]]:
-    pos = start_pos
-    direction = 0-1j
-    seen = set()
-    while True:
-        key = (pos, direction)
-        if key in seen:
-            return None
-        seen.add(key)
+width: int = 0
+height: int = 0
+start_pos: tuple[int, int, int] = (0, 0, 0)
 
-        neo_pos = pos+direction
-        if neo_pos not in board:
-            return seen
-        match board[neo_pos]:
-            case '.':
-                board[neo_pos] = 'X'
-                pos = neo_pos
-            case 'X':
-                pos = neo_pos
-            case '#':
-                direction = -direction.imag+1j*direction.real
+map_: list[list[list[tuple[int, int, int]]]] = []
+visited: list[tuple[int, int, int]] = []
+
+def off_map(x: int, y: int) -> bool:
+    return not (0 <= x < width and 0 <= y < height)
 
 # Part 1:
-def part1(board) -> int:
-    return len({c for c, _ in get_guard_route(board)})
+def part1() -> int:
+    global start_pos, map_, visited
+    pos = start_pos
+    while not pos == INVALID:
+        x, y, d = pos
+        visited.append(pos)
+        pos = map_[x][y][d]
+    return len({(x, y) for x, y, _ in visited})
 
 # Part 2:
-def part2(board) -> int:
-    return sum(
-        get_guard_route(board | {pos: '#'}) is None for pos in {c for c, _ in get_guard_route(board)}
-    )
+def part2() -> int:
+    global INVALID, DIRECTIONS, width, height, visited
+    loop_obstacles = [[False for _ in range(height)] for _ in range(width)]
+    not_loop_obstacles = [[False for _ in range(height)] for _ in range(width)]
+    seen = [[[0 for _ in range(4)] for _ in range(height)] for _ in range(width)]
+    for i, pos in enumerate(visited[1:], 1):
+        x, y, _ = pos
+        if loop_obstacles[x][y] or not_loop_obstacles[x][y]:
+            continue
+        # modify the map surrounding the new obstacle
+        for d, (dx, dy) in enumerate(DIRECTIONS):
+            nx, ny = (x-dx, y-dy)
+            if off_map(nx, ny):
+                continue
+            map_[nx][ny][d] = (nx, ny, (d+1) % 4)
+        # check if valid obstacle
+        cx, cy, cd = visited[i-1]
+        while not (cx, cy, cd) == INVALID and not seen[cx][cy][cd] == i:
+            seen[cx][cy][cd] = i
+            cx, cy, cd = map_[cx][cy][cd]
+        if (cx, cy, cd) == INVALID:
+            not_loop_obstacles[x][y] = True
+        else:
+            loop_obstacles[x][y] = True
+        # reset the map surrounding the new obstacle
+        for d, (dx, dy) in enumerate(DIRECTIONS):
+            nx, ny = (x-dx, y-dy)
+            if off_map(nx, ny):
+                continue
+            map_[nx][ny][d] = (x, y, d)
+    return sum(sum(row) for row in loop_obstacles)
 
-def get_input():
-    global start_pos
+def get_input() -> None:
+    global INVALID, DIRECTIONS, width, height, start_pos, map_
     with open(os.path.dirname(os.path.realpath(__file__))+'/input', 'r', encoding='utf-8') as f:
         content = [s.strip() for s in f.read().rstrip().split('\n')]
-    board = {x + 1j * y: c for y, l in enumerate(content) for x, c in enumerate(l)}
-    start_pos = [x + 1j * y for y, l in enumerate(content) for x, c in enumerate(l) if c == '^'][0]
-    board[start_pos] = 'X'
-    return board
+
+    width, height = (len(content[0]), len(content))
+    map_ = [[[(x, y, d) for d in range(4)] for y in range(height)] for x in range(width)]
+
+    obstacles = [[False for _ in range(height)] for _ in range(width)]
+
+    for x, y in [(x, y) for x in range(width) for y in range(height)]:
+        match content[y][x]:
+            case '#':
+                obstacles[x][y] = True
+            case '^':
+                start_pos = (x, y, 0)
+
+    for x, y, d in [(x, y, d) for x in range(width) for y in range(height) for d in range(4)]:
+        dx, dy = DIRECTIONS[d]
+        if off_map(x+dx, y+dy):
+            map_[x][y][d] = INVALID
+        elif obstacles[x+dx][y+dy]:
+            map_[x][y][d] = (x, y, (d+1) % 4)
+        else:
+            map_[x][y][d] = (x+dx, y+dy, d)
 
 @profiler
 def solve():
-    board = get_input()
-    print(f'Part 1: {part1(board)}')
-    print(f'Part 2: {part2(board)}')
+    get_input()
+    print(f'Part 1: {part1()}')
+    print(f'Part 2: {part2()}')
 
 if __name__ == "__main__":
     solve()
