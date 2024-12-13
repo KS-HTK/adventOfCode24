@@ -4,6 +4,8 @@ import os
 import re
 from time import perf_counter
 from sympy import symbols, Eq, solve as sysolve
+from numpy.linalg import solve as npsolve
+from numpy import array
 
 def profiler(method):
     def profiler_method(*arg, **kw):
@@ -13,7 +15,7 @@ def profiler(method):
         return ret
     return profiler_method
 
-def linear_diophantine(a: list[int], b: list[int], c: list[int]) -> tuple[int, int]:
+def linear_diophantine_sympy(a: list[int], b: list[int], c: list[int]) -> tuple[int, int]:
     if len(a) != len(b) != len(c):
         raise ValueError('inputs must have same length')
     n, m = symbols('n m')
@@ -24,6 +26,20 @@ def linear_diophantine(a: list[int], b: list[int], c: list[int]) -> tuple[int, i
     if int(nt) == nt and int(mt) == mt:
         return int(nt), int(mt)
     return 0, 0
+
+def linear_diophantine_numpy(a: list[int], b: list[int], c: list[int]) -> tuple[int, int]:
+    # [[ax, ay], [bx, by]] [cx, cy]
+    m = array([a, b]).transpose()
+    nt, mt = npsolve(m, c)
+    if nt- 1e-4 < int(nt) < nt+ 1e-4 and mt- 1e-4 < int(mt) < mt+ 1e-4:
+        return int(nt), int(mt)
+    return 0, 0
+
+def linear_diophantine(a: list[int], b: list[int], c: list[int]) -> tuple[int, int]:
+    n, m = linear_diophantine_numpy(a, b, c)
+    if n == 0 and m == 0:
+        return linear_diophantine_sympy(a, b, c)
+    return n, m
 
 def part(content) -> tuple[int, int]:
     parts = []
@@ -36,13 +52,7 @@ def part(content) -> tuple[int, int]:
 def get_input():
     with open(os.path.dirname(os.path.realpath(__file__))+'/input', 'r', encoding='utf-8') as f:
         content = [s.strip() for s in f.read().rstrip().split('\n\n')]
-        machines = []
-        for lines in content:
-            machines.append([])
-            for l in lines.split('\n'):
-                result = re.search(r'X[+|=](\d*), Y[+|=](\d*)', l)
-                machines[-1].append([int(result.group(1)), int(result.group(2))])
-    return machines
+    return [[list(map(int, re.findall(r'\d+', line))) for line in lines.split('\n')] for lines in content]
 
 @profiler
 def solve():
