@@ -6,7 +6,7 @@ The tasks from 2024 have been solved in [python](https://python.org/).
 
 <!-- AOC TILES BEGIN -->
 <h1 align="center">
-  2024 - 42 ⭐ - Python
+  2024 - 44 ⭐ - Python
 </h1>
 <a href="day01/day01.py">
   <img src=".aoc_tiles/tiles/2024/01.png" width="161px">
@@ -71,7 +71,7 @@ The tasks from 2024 have been solved in [python](https://python.org/).
 <a href="day21/day21.py">
   <img src=".aoc_tiles/tiles/2024/21.png" width="161px">
 </a>
-<a href="None">
+<a href="day22/day22.py">
   <img src=".aoc_tiles/tiles/2024/22.png" width="161px">
 </a>
 <a href="None">
